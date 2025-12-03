@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anagram Morph Animator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #f8f9fa;
+      padding: 2rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 56rem;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 0.25rem;
+      border: 1px solid #e5e7eb;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      color: #111827;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+    }
+
+    .input-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #6b7280;
+    }
+
+    .status-message {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.25rem;
+      margin-top: 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    .status-message.valid {
+      background-color: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-message.invalid {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .status-message svg {
+      flex-shrink: 0;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.875rem;
+      background: white;
+      color: #374151;
+    }
+
+    button:disabled {
+      background-color: #f9fafb;
+      color: #9ca3af;
+      cursor: not-allowed;
+      border-color: #e5e7eb;
+    }
+
+    button.primary:not(:disabled):hover {
+      background-color: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    button.secondary:not(:disabled):hover {
+      background-color: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .canvas-container {
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.25rem;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.125rem;
+    }
+
+    .tips {
+      margin-top: 1.5rem;
+      font-size: 0.875rem;
+      color: #4b5563;
+    }
+
+    .tips p {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .tips ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+    }
+
+    .tips li {
+      margin-bottom: 0.25rem;
+    }
+
+    .tips {
+      margin-top: 1.5rem;
+      font-size: 0.875rem;
+      color: #4b5563;
+    }
+
+    .tips p {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .tips ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+    }
+
+    .tips li {
+      margin-bottom: 0.25rem;
+    }
+
+    .progress-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .progress-overlay.active {
+      display: flex;
+    }
+
+    .progress-box {
+      background: white;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      min-width: 300px;
+    }
+
+    .progress-box h3 {
+      margin-bottom: 1rem;
+      color: #1f2937;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #374151;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Anagram Morph Animator</h1>
+      <p class="subtitle">Enter two anagram phrases and watch them transform</p>
+
+      <div class="input-group">
+        <label for="phrase1">First Phrase</label>
+        <input 
+          type="text" 
+          id="phrase1" 
+          placeholder="e.g., The Morse Code"
+        >
+      </div>
+
+      <div class="input-group">
+        <label for="phrase2">Second Phrase</label>
+        <input 
+          type="text" 
+          id="phrase2" 
+          placeholder="e.g., Here come dots"
+        >
+      </div>
+
+      <div id="statusMessage" style="display: none;"></div>
+
+      <div class="button-group">
+        <button id="animateBtn" class="primary" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Animate
+        </button>
+        <button id="downloadBtn" class="secondary" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download GIF
+        </button>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="canvas" width="800" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="progressOverlay" class="progress-overlay">
+    <div class="progress-box">
+      <h3>Generating GIF...</h3>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p id="progressText">0%</p>
+    </div>
+  </div>
+
+  <script>
+    // Proper GIF encoder with LZW compression
+    class SimpleGIFEncoder {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.frames = [];
+      }
+
+      addFrame(imageData, delay) {
+        this.frames.push({ imageData, delay });
+      }
+
+      encode() {
+        const stream = [];
+        
+        // GIF Header
+        stream.push(0x47, 0x49, 0x46, 0x38, 0x39, 0x61); // "GIF89a"
+        
+        // Logical Screen Descriptor
+        this.writeUint16(stream, this.width);
+        this.writeUint16(stream, this.height);
+        stream.push(0xF7, 0x00, 0x00); // Global color table: 256 colors, 8-bit
+        
+        // Global Color Table (256 colors RGB palette)
+        for (let i = 0; i < 256; i++) {
+          stream.push(i, i, i); // Grayscale palette
+        }
+        
+        // Netscape extension for looping
+        stream.push(0x21, 0xFF, 0x0B);
+        stream.push(0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30);
+        stream.push(0x03, 0x01, 0x00, 0x00, 0x00);
+        
+        // Add each frame
+        for (const frame of this.frames) {
+          this.addFrameToStream(stream, frame);
+        }
+        
+        // Trailer
+        stream.push(0x3B);
+        
+        return new Uint8Array(stream);
+      }
+
+      addFrameToStream(stream, frame) {
+        // Graphic Control Extension
+        stream.push(0x21, 0xF9, 0x04);
+        stream.push(0x04); // Disposal method: restore to background
+        this.writeUint16(stream, Math.floor(frame.delay / 10)); // Delay in centiseconds
+        stream.push(0x00, 0x00);
+        
+        // Image Descriptor
+        stream.push(0x2C);
+        this.writeUint16(stream, 0); // Left
+        this.writeUint16(stream, 0); // Top
+        this.writeUint16(stream, this.width);
+        this.writeUint16(stream, this.height);
+        stream.push(0x00); // No local color table
+        
+        // Image Data with proper LZW encoding
+        const pixels = this.quantizeFrame(frame.imageData);
+        this.writeLZW(stream, pixels);
+      }
+
+      quantizeFrame(imageData) {
+        const pixels = new Uint8Array(this.width * this.height);
+        const data = imageData.data;
+        
+        for (let i = 0; i < pixels.length; i++) {
+          const r = data[i * 4];
+          const g = data[i * 4 + 1];
+          const b = data[i * 4 + 2];
+          // Quantize to 256 grayscale values
+          pixels[i] = Math.floor((r + g + b) / 3);
+        }
+        
+        return pixels;
+      }
+
+      writeLZW(stream, pixels) {
+        const minCodeSize = 8;
+        stream.push(minCodeSize);
+        
+        const clearCode = 1 << minCodeSize;
+        const eoiCode = clearCode + 1;
+        let codeSize = minCodeSize + 1;
+        let nextCode = eoiCode + 1;
+        
+        const dict = new Map();
+        let buffer = 0;
+        let bitsInBuffer = 0;
+        const output = [];
+        
+        const writeBits = (code, numBits) => {
+          buffer |= code << bitsInBuffer;
+          bitsInBuffer += numBits;
+          
+          while (bitsInBuffer >= 8) {
+            output.push(buffer & 0xFF);
+            buffer >>= 8;
+            bitsInBuffer -= 8;
+          }
+        };
+        
+        const writeCode = (code) => {
+          writeBits(code, codeSize);
+          
+          if (nextCode >= (1 << codeSize) && codeSize < 12) {
+            codeSize++;
+          }
+        };
+        
+        // Initialize dictionary
+        const initDict = () => {
+          dict.clear();
+          codeSize = minCodeSize + 1;
+          nextCode = eoiCode + 1;
+        };
+        
+        // Write clear code
+        writeCode(clearCode);
+        initDict();
+        
+        let indexBuffer = [pixels[0]];
+        
+        for (let i = 1; i < pixels.length; i++) {
+          const k = pixels[i];
+          const newBuffer = [...indexBuffer, k];
+          const key = newBuffer.join(',');
+          
+          if (dict.has(key)) {
+            indexBuffer = newBuffer;
+          } else {
+            // Output code for indexBuffer
+            const indexKey = indexBuffer.join(',');
+            const code = indexBuffer.length === 1 ? indexBuffer[0] : dict.get(indexKey);
+            writeCode(code);
+            
+            // Add to dictionary
+            if (nextCode < 4096) {
+              dict.set(key, nextCode);
+              nextCode++;
+            } else {
+              // Dictionary full, reset
+              writeCode(clearCode);
+              initDict();
+            }
+            
+            indexBuffer = [k];
+          }
+        }
+        
+        // Output final code
+        const finalKey = indexBuffer.join(',');
+        const finalCode = indexBuffer.length === 1 ? indexBuffer[0] : dict.get(finalKey);
+        writeCode(finalCode);
+        
+        // Write EOI code
+        writeCode(eoiCode);
+        
+        // Flush remaining bits
+        if (bitsInBuffer > 0) {
+          output.push(buffer & 0xFF);
+        }
+        
+        // Write output in sub-blocks
+        for (let i = 0; i < output.length; i += 255) {
+          const blockSize = Math.min(255, output.length - i);
+          stream.push(blockSize);
+          for (let j = 0; j < blockSize; j++) {
+            stream.push(output[i + j]);
+          }
+        }
+        
+        stream.push(0x00); // Block terminator
+      }
+
+      writeUint16(stream, value) {
+        stream.push(value & 0xFF, (value >> 8) & 0xFF);
+      }
+    }
+  </script>
+
+  <script>
+    const phrase1Input = document.getElementById('phrase1');
+    const phrase2Input = document.getElementById('phrase2');
+    const statusMessage = document.getElementById('statusMessage');
+    const animateBtn = document.getElementById('animateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const progressOverlay = document.getElementById('progressOverlay');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    let isAnimating = false;
+    let animationInterval = null;
+    let frames = [];
+    let currentFrame = 0;
+
+    function normalizeForAnagram(str) {
+      return str.toLowerCase().replace(/[^a-z]/g, '').split('').sort().join('');
+    }
+
+    function verifyAnagram() {
+      const phrase1 = phrase1Input.value.trim();
+      const phrase2 = phrase2Input.value.trim();
+
+      if (!phrase1 || !phrase2) {
+        statusMessage.style.display = 'none';
+        animateBtn.disabled = true;
+        return false;
+      }
+
+      const norm1 = normalizeForAnagram(phrase1);
+      const norm2 = normalizeForAnagram(phrase2);
+      const result = norm1.length > 0 && norm1 === norm2;
+
+      statusMessage.style.display = 'flex';
+      if (result) {
+        statusMessage.className = 'status-message valid';
+        statusMessage.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>Valid anagrams! Ready to animate.</span>
+        `;
+        animateBtn.disabled = false;
+      } else {
+        statusMessage.className = 'status-message invalid';
+        statusMessage.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Not anagrams. Please check your phrases.</span>
+        `;
+        animateBtn.disabled = true;
+      }
+
+      return result;
+    }
+
+    function createMorphFrames() {
+      const phrase1 = phrase1Input.value;
+      const phrase2 = phrase2Input.value;
+      const width = 800;
+      const height = 200;
+      const totalFrames = 120;
+      const capturedFrames = [];
+    
+      // Calculate optimal font size based on text length
+      const maxLength = Math.max(phrase1.length, phrase2.length);
+      let fontSize;
+      if (maxLength <= 20) {
+        fontSize = 32;
+      } else if (maxLength <= 30) {
+        fontSize = 26;
+      } else if (maxLength <= 40) {
+        fontSize = 22;
+      } else if (maxLength <= 60) {
+        fontSize = 18;
+      } else {
+        fontSize = 16;
+      }
+    
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+    
+      // Helper function to split text into lines
+      const splitIntoLines = (text, maxWidth) => {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+    
+        for (const word of words) {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          const metrics = ctx.measureText(testLine);
+          
+          if (metrics.width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        
+        return lines.length > 0 ? lines : [text];
+      };
+    
+      const horizontalMargin = 80;
+      const verticalMargin = 40;
+      const maxTextWidth = width - (horizontalMargin * 2);
+      const lines1 = splitIntoLines(phrase1, maxTextWidth);
+      const lines2 = splitIntoLines(phrase2, maxTextWidth);
+      const maxLines = Math.max(lines1.length, lines2.length);
+      
+      // Adjust line height and font size if text is too tall
+      let lineHeight = fontSize * 1.3;
+      let adjustedFontSize = fontSize;
+      const maxTextHeight = height - (verticalMargin * 2);
+      const requiredHeight = maxLines * lineHeight;
+      
+      if (requiredHeight > maxTextHeight) {
+        const scaleFactor = maxTextHeight / requiredHeight;
+        adjustedFontSize = Math.floor(fontSize * scaleFactor);
+        lineHeight = adjustedFontSize * 1.3;
+        ctx.font = `bold ${adjustedFontSize}px Arial`;
+      }
+      
+      const totalTextHeight = maxLines * lineHeight;
+      const startY = (height - totalTextHeight) / 2 + lineHeight / 2;
+    
+      // Build character positions for phrase 1
+      const charPositions1 = [];
+      lines1.forEach((line, lineIndex) => {
+        const chars = line.split('');
+        const totalWidth = chars.reduce((sum, char) => sum + ctx.measureText(char).width, 0);
+        const spacing = Math.max(6, 10 - maxLines * 2); // Reduce spacing for multi-line text
+        const startX = width / 2 - (totalWidth + spacing * (chars.length - 1)) / 2;
+        
+        let currentX = startX;
+        chars.forEach((char) => {
+          const charWidth = ctx.measureText(char).width;
+          charPositions1.push({
+            char,
+            x: currentX + charWidth / 2,
+            y: startY + lineIndex * lineHeight
+          });
+          currentX += charWidth + spacing;
+        });
+      });
+    
+      // Build character positions for phrase 2
+      const charPositions2 = [];
+      lines2.forEach((line, lineIndex) => {
+        const chars = line.split('');
+        const totalWidth = chars.reduce((sum, char) => sum + ctx.measureText(char).width, 0);
+        const spacing = Math.max(6, 10 - maxLines * 2);
+        const startX = width / 2 - (totalWidth + spacing * (chars.length - 1)) / 2;
+        
+        let currentX = startX;
+        chars.forEach((char) => {
+          const charWidth = ctx.measureText(char).width;
+          charPositions2.push({
+            char,
+            x: currentX + charWidth / 2,
+            y: startY + lineIndex * lineHeight
+          });
+          currentX += charWidth + spacing;
+        });
+      });
+    
+      const usedIndices = new Set();
+      const charMapping = charPositions1.map((pos1, idx) => {
+        let targetIdx = -1;
+        const char1Lower = pos1.char.toLowerCase();
+    
+        for (let i = 0; i < charPositions2.length; i++) {
+          if (usedIndices.has(i)) continue;
+          if (charPositions2[i].char.toLowerCase() === char1Lower || 
+              (!/[a-zA-Z]/.test(pos1.char) && !/[a-zA-Z]/.test(charPositions2[i].char))) {
+            targetIdx = i;
+            usedIndices.add(i);
+            break;
+          }
+        }
+    
+        if (targetIdx === -1) {
+          for (let i = 0; i < charPositions2.length; i++) {
+            if (!usedIndices.has(i)) {
+              targetIdx = i;
+              usedIndices.add(i);
+              break;
+            }
+          }
+        }
+    
+        if (targetIdx === -1) {
+          targetIdx = idx % charPositions2.length;
+        }
+    
+        const pos2 = charPositions2[targetIdx];
+        const margin = 70;
+        const maxDistance = Math.min(width, height) * 0.25; // Reduced from 0.35 to keep animations tighter
+    
+        const angle1 = (idx / charPositions1.length) * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+        const distance1 = maxDistance * 0.5 + Math.random() * maxDistance * 0.5;
+        const scrambledX1 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(angle1) * distance1));
+        const scrambledY1 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(angle1) * distance1));
+    
+        const angle2 = (idx / charPositions1.length) * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.8 + Math.PI;
+        const distance2 = maxDistance * 0.5 + Math.random() * maxDistance * 0.5;
+        const scrambledX2 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(angle2) * distance2));
+        const scrambledY2 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(angle2) * distance2));
+    
+        const ctrlAngle1 = angle1 + (Math.random() - 0.5) * Math.PI;
+        const ctrlDist1 = distance1 * 0.7 + Math.random() * distance1 * 0.6;
+        const controlX1 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(ctrlAngle1) * ctrlDist1));
+        const controlY1 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(ctrlAngle1) * ctrlDist1));
+    
+        const ctrl1bX = (scrambledX1 + pos2.x) / 2 + (Math.random() - 0.5) * 80; // Reduced from 100
+        const ctrl1bY = (scrambledY1 + pos2.y) / 2 + (Math.random() - 0.5) * 40; // Reduced from 50
+    
+        const ctrlAngle2 = angle2 + (Math.random() - 0.5) * Math.PI;
+        const ctrlDist2 = distance2 * 0.7 + Math.random() * distance2 * 0.6;
+        const controlX2 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(ctrlAngle2) * ctrlDist2));
+        const controlY2 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(ctrlAngle2) * ctrlDist2));
+    
+        const ctrl2bX = (scrambledX2 + pos1.x) / 2 + (Math.random() - 0.5) * 80;
+        const ctrl2bY = (scrambledY2 + pos1.y) / 2 + (Math.random() - 0.5) * 40;
+    
+        return {
+          char: pos1.char,
+          startX: pos1.x,
+          startY: pos1.y,
+          scrambledX1, scrambledY1, scrambledX2, scrambledY2,
+          controlX1, controlY1, ctrl1bX, ctrl1bY,
+          controlX2, controlY2, ctrl2bX, ctrl2bY,
+          endX: pos2.x,
+          endY: pos2.y,
+          targetChar: pos2.char
+        };
+      });
+    
+      for (let i = 0; i < totalFrames; i++) {
+        ctx.clearRect(0, 0, width, height);
+    
+        const gradient = ctx.createLinearGradient(0, 0, width, 0);
+        gradient.addColorStop(0, '#f8f9fa');
+        gradient.addColorStop(1, '#e5e7eb');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    
+        ctx.fillStyle = '#1f2937';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        ctx.shadowBlur = 4;
+        ctx.font = `bold ${adjustedFontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+    
+        if (i < 15) {
+          // Hold on phrase 1
+          charMapping.forEach((item) => {
+            ctx.fillText(item.char, item.startX, item.startY);
+          });
+        } else if (i < 50) {
+          // Morph from phrase 1 to phrase 2
+          const transProgress = (i - 15) / 35;
+          charMapping.forEach((item) => {
+            let currentX, currentY, displayChar;
+            if (transProgress <= 0.5) {
+              const t = transProgress * 2;
+              const t2 = t * t;
+              const mt = 1 - t;
+              const mt2 = mt * mt;
+              currentX = mt2 * item.startX + 2 * mt * t * item.controlX1 + t2 * item.scrambledX1;
+              currentY = mt2 * item.startY + 2 * mt * t * item.controlY1 + t2 * item.scrambledY1;
+              displayChar = item.char;
+            } else {
+              const t = (transProgress - 0.5) * 2;
+              const t2 = t * t;
+              const mt = 1 - t;
+              const mt2 = mt * mt;
+              currentX = mt2 * item.scrambledX1 + 2 * mt * t * item.ctrl1bX + t2 * item.endX;
+              currentY = mt2 * item.scrambledY1 + 2 * mt * t * item.ctrl1bY + t2 * item.endY;
+              displayChar = t < 0.5 ? item.char : item.targetChar;
+            }
+            ctx.fillText(displayChar, currentX, currentY);
+          });
+        } else if (i < 65) {
+          // Hold on phrase 2
+          charMapping.forEach((item) => {
+            ctx.fillText(item.targetChar, item.endX, item.endY);
+          });
+        } else if (i < 100) {
+          // Morph from phrase 2 back to phrase 1
+          const transProgress = (i - 65) / 35;
+          charMapping.forEach((item) => {
+            let currentX, currentY, displayChar;
+            if (transProgress <= 0.5) {
+              const t = transProgress * 2;
+              const t2 = t * t;
+              const mt = 1 - t;
+              const mt2 = mt * mt;
+              currentX = mt2 * item.endX + 2 * mt * t * item.controlX2 + t2 * item.scrambledX2;
+              currentY = mt2 * item.endY + 2 * mt * t * item.controlY2 + t2 * item.scrambledY2;
+              displayChar = item.targetChar;
+            } else {
+              const t = (transProgress - 0.5) * 2;
+              const t2 = t * t;
+              const mt = 1 - t;
+              const mt2 = mt * mt;
+              currentX = mt2 * item.scrambledX2 + 2 * mt * t * item.ctrl2bX + t2 * item.startX;
+              currentY = mt2 * item.scrambledY2 + 2 * mt * t * item.ctrl2bY + t2 * item.startY;
+              displayChar = t < 0.5 ? item.targetChar : item.char;
+            }
+            ctx.fillText(displayChar, currentX, currentY);
+          });
+        } else {
+          // Hold on phrase 1 again (frames 100-119)
+          charMapping.forEach((item) => {
+            ctx.fillText(item.char, item.startX, item.startY);
+          });
+        }
+    
+        capturedFrames.push(ctx.getImageData(0, 0, width, height));
+      }
+    
+      return capturedFrames;
+    }
+    function animate() {
+      if (!verifyAnagram()) {
+        alert('Please enter valid anagrams first!');
+        return;
+      }
+
+      if (isAnimating) {
+        clearInterval(animationInterval);
+        isAnimating = false;
+        animateBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Animate
+        `;
+        return;
+      }
+
+      frames = createMorphFrames();
+      downloadBtn.disabled = false;
+      isAnimating = true;
+      currentFrame = 0;
+
+      animateBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+        Stop
+      `;
+
+      animationInterval = setInterval(() => {
+        ctx.putImageData(frames[currentFrame], 0, 0);
+        currentFrame = (currentFrame + 1) % frames.length;
+      }, 50);
+    }
+
+    async function downloadGIF() {
+      if (frames.length === 0) {
+        alert('Please generate an animation first!');
+        return;
+      }
+
+      progressOverlay.classList.add('active');
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+
+      try {
+        const encoder = new SimpleGIFEncoder(800, 200);
+        
+        for (let i = 0; i < frames.length; i++) {
+          encoder.addFrame(frames[i], 50);
+          
+          const progress = ((i + 1) / frames.length) * 100;
+          progressFill.style.width = progress + '%';
+          progressText.textContent = Math.round(progress) + '%';
+          
+          // Allow UI to update
+          if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+        
+        progressText.textContent = 'Encoding...';
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const gifData = encoder.encode();
+        const blob = new Blob([gifData], { type: 'image/gif' });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'anagram-morph.gif';
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        progressOverlay.classList.remove('active');
+      } catch (error) {
+        console.error('Error generating GIF:', error);
+        alert('Error generating GIF: ' + error.message);
+        progressOverlay.classList.remove('active');
+      }
+    }
+
+    phrase1Input.addEventListener('input', verifyAnagram);
+    phrase2Input.addEventListener('input', verifyAnagram);
+    animateBtn.addEventListener('click', animate);
+    downloadBtn.addEventListener('click', downloadGIF);
+  </script>
+</body>
+</html>
