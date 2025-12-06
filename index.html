@@ -155,46 +155,6 @@
       border-radius: 0.125rem;
     }
 
-    .tips {
-      margin-top: 1.5rem;
-      font-size: 0.875rem;
-      color: #4b5563;
-    }
-
-    .tips p {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-
-    .tips ul {
-      list-style: disc;
-      padding-left: 1.5rem;
-    }
-
-    .tips li {
-      margin-bottom: 0.25rem;
-    }
-
-    .tips {
-      margin-top: 1.5rem;
-      font-size: 0.875rem;
-      color: #4b5563;
-    }
-
-    .tips p {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-
-    .tips ul {
-      list-style: disc;
-      padding-left: 1.5rem;
-    }
-
-    .tips li {
-      margin-bottom: 0.25rem;
-    }
-
     .progress-overlay {
       position: fixed;
       top: 0;
@@ -625,7 +585,7 @@
       lines1.forEach((line, lineIndex) => {
         const chars = line.split('');
         const totalWidth = chars.reduce((sum, char) => sum + ctx.measureText(char).width, 0);
-        const spacing = Math.max(6, 10 - maxLines * 2); // Reduce spacing for multi-line text
+        const spacing = Math.max(6, 10 - maxLines * 2);
         const startX = width / 2 - (totalWidth + spacing * (chars.length - 1)) / 2;
         
         let currentX = startX;
@@ -664,34 +624,42 @@
       const charMapping = charPositions1.map((pos1, idx) => {
         let targetIdx = -1;
         const char1Lower = pos1.char.toLowerCase();
+        const isAlpha1 = /[a-zA-Z]/.test(pos1.char);
     
-        for (let i = 0; i < charPositions2.length; i++) {
-          if (usedIndices.has(i)) continue;
-          if (charPositions2[i].char.toLowerCase() === char1Lower || 
-              (!/[a-zA-Z]/.test(pos1.char) && !/[a-zA-Z]/.test(charPositions2[i].char))) {
-            targetIdx = i;
-            usedIndices.add(i);
-            break;
-          }
-        }
-    
-        if (targetIdx === -1) {
+        // Only match alphabetic characters with alphabetic characters
+        if (isAlpha1) {
           for (let i = 0; i < charPositions2.length; i++) {
-            if (!usedIndices.has(i)) {
+            if (usedIndices.has(i)) continue;
+            if (/[a-zA-Z]/.test(charPositions2[i].char) && 
+                charPositions2[i].char.toLowerCase() === char1Lower) {
               targetIdx = i;
               usedIndices.add(i);
               break;
             }
           }
+          
+          // If no exact match, find any unused alphabetic character
+          if (targetIdx === -1) {
+            for (let i = 0; i < charPositions2.length; i++) {
+              if (!usedIndices.has(i) && /[a-zA-Z]/.test(charPositions2[i].char)) {
+                targetIdx = i;
+                usedIndices.add(i);
+                break;
+              }
+            }
+          }
         }
-    
+        
+        // For non-alphabetic characters, just pick a random position (won't be used for morphing)
         if (targetIdx === -1) {
           targetIdx = idx % charPositions2.length;
+        } else {
+          usedIndices.add(targetIdx);
         }
     
         const pos2 = charPositions2[targetIdx];
         const margin = 70;
-        const maxDistance = Math.min(width, height) * 0.25; // Reduced from 0.35 to keep animations tighter
+        const maxDistance = Math.min(width, height) * 0.25;
     
         const angle1 = (idx / charPositions1.length) * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.8;
         const distance1 = maxDistance * 0.5 + Math.random() * maxDistance * 0.5;
@@ -708,8 +676,8 @@
         const controlX1 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(ctrlAngle1) * ctrlDist1));
         const controlY1 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(ctrlAngle1) * ctrlDist1));
     
-        const ctrl1bX = (scrambledX1 + pos2.x) / 2 + (Math.random() - 0.5) * 80; // Reduced from 100
-        const ctrl1bY = (scrambledY1 + pos2.y) / 2 + (Math.random() - 0.5) * 40; // Reduced from 50
+        const ctrl1bX = (scrambledX1 + pos2.x) / 2 + (Math.random() - 0.5) * 80;
+        const ctrl1bY = (scrambledY1 + pos2.y) / 2 + (Math.random() - 0.5) * 40;
     
         const ctrlAngle2 = angle2 + (Math.random() - 0.5) * Math.PI;
         const ctrlDist2 = distance2 * 0.7 + Math.random() * distance2 * 0.6;
@@ -721,6 +689,8 @@
     
         return {
           char: pos1.char,
+          isAlpha1: /[a-zA-Z]/.test(pos1.char),
+          isAlpha2: targetIdx !== -1 ? /[a-zA-Z]/.test(pos2.char) : false,
           startX: pos1.x,
           startY: pos1.y,
           scrambledX1, scrambledY1, scrambledX2, scrambledY2,
@@ -728,9 +698,70 @@
           controlX2, controlY2, ctrl2bX, ctrl2bY,
           endX: pos2.x,
           endY: pos2.y,
-          targetChar: pos2.char
+          targetChar: pos2.char,
+          fromPhrase: 1
         };
       });
+
+      // Add any unmapped characters from phrase 2
+      for (let i = 0; i < charPositions2.length; i++) {
+        if (!usedIndices.has(i)) {
+          const pos2 = charPositions2[i];
+          const margin = 70;
+          const maxDistance = Math.min(width, height) * 0.25;
+          
+          // Generate random scrambled positions for phrase 2 characters
+          const angle1 = (i / charPositions2.length) * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+          const distance1 = maxDistance * 0.5 + Math.random() * maxDistance * 0.5;
+          const scrambledX1 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(angle1) * distance1));
+          const scrambledY1 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(angle1) * distance1));
+          
+          const angle2 = (i / charPositions2.length) * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.8 + Math.PI;
+          const distance2 = maxDistance * 0.5 + Math.random() * maxDistance * 0.5;
+          const scrambledX2 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(angle2) * distance2));
+          const scrambledY2 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(angle2) * distance2));
+          
+          const ctrlAngle1 = angle1 + (Math.random() - 0.5) * Math.PI;
+          const ctrlDist1 = distance1 * 0.7 + Math.random() * distance1 * 0.6;
+          const controlX1 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(ctrlAngle1) * ctrlDist1));
+          const controlY1 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(ctrlAngle1) * ctrlDist1));
+          
+          const ctrl1bX = (scrambledX1 + pos2.x) / 2 + (Math.random() - 0.5) * 80;
+          const ctrl1bY = (scrambledY1 + pos2.y) / 2 + (Math.random() - 0.5) * 40;
+          
+          const ctrlAngle2 = angle2 + (Math.random() - 0.5) * Math.PI;
+          const ctrlDist2 = distance2 * 0.7 + Math.random() * distance2 * 0.6;
+          const controlX2 = Math.max(margin, Math.min(width - margin, width / 2 + Math.cos(ctrlAngle2) * ctrlDist2));
+          const controlY2 = Math.max(margin, Math.min(height - margin, height / 2 + Math.sin(ctrlAngle2) * ctrlDist2));
+          
+          const ctrl2bX = (scrambledX2 + pos2.x) / 2 + (Math.random() - 0.5) * 80;
+          const ctrl2bY = (scrambledY2 + pos2.y) / 2 + (Math.random() - 0.5) * 40;
+          
+          charMapping.push({
+            char: '',
+            isAlpha1: false,
+            isAlpha2: /[a-zA-Z]/.test(pos2.char),
+            startX: pos2.x,
+            startY: pos2.y,
+            scrambledX1, 
+            scrambledY1, 
+            scrambledX2, 
+            scrambledY2,
+            controlX1, 
+            controlY1, 
+            ctrl1bX, 
+            ctrl1bY,
+            controlX2, 
+            controlY2, 
+            ctrl2bX, 
+            ctrl2bY,
+            endX: pos2.x,
+            endY: pos2.y,
+            targetChar: pos2.char,
+            fromPhrase: 2
+          });
+        }
+      }
     
       for (let i = 0; i < totalFrames; i++) {
         ctx.clearRect(0, 0, width, height);
@@ -741,7 +772,6 @@
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
     
-        ctx.fillStyle = '#1f2937';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
         ctx.shadowBlur = 4;
         ctx.font = `bold ${adjustedFontSize}px Arial`;
@@ -750,15 +780,66 @@
     
         if (i < 15) {
           // Hold on phrase 1
+          ctx.fillStyle = '#1f2937';
+          ctx.globalAlpha = 1;
           charMapping.forEach((item) => {
-            ctx.fillText(item.char, item.startX, item.startY);
+            if (item.fromPhrase === 1) {
+              ctx.fillText(item.char, item.startX, item.startY);
+            }
           });
         } else if (i < 50) {
           // Morph from phrase 1 to phrase 2
           const transProgress = (i - 15) / 35;
           charMapping.forEach((item) => {
-            let currentX, currentY, displayChar;
-            if (transProgress <= 0.5) {
+            let currentX, currentY, displayChar, alpha;
+            
+            // Characters only in phrase 2 - fade in with spline
+            if (item.fromPhrase === 2) {
+              const t = Math.max(0, (transProgress - 0.5) * 2);
+              const t2 = t * t;
+              const mt = 1 - t;
+              const mt2 = mt * mt;
+              currentX = mt2 * item.scrambledX1 + 2 * mt * t * item.ctrl1bX + t2 * item.endX;
+              currentY = mt2 * item.scrambledY1 + 2 * mt * t * item.ctrl1bY + t2 * item.endY;
+              displayChar = item.targetChar;
+              alpha = t;
+            }
+            // Fade out non-alphabetic characters from phrase 1 with spline
+            else if (!item.isAlpha1) {
+              if (transProgress <= 0.5) {
+                const t = transProgress * 2;
+                const t2 = t * t;
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                currentX = mt2 * item.startX + 2 * mt * t * item.controlX1 + t2 * item.scrambledX1;
+                currentY = mt2 * item.startY + 2 * mt * t * item.controlY1 + t2 * item.scrambledY1;
+                alpha = 1 - t;
+              } else {
+                currentX = item.scrambledX1;
+                currentY = item.scrambledY1;
+                alpha = 0;
+              }
+              displayChar = item.char;
+            }
+            // Fade in non-alphabetic characters from phrase 2 with spline
+            else if (!item.isAlpha2) {
+              if (transProgress <= 0.5) {
+                currentX = item.scrambledX1;
+                currentY = item.scrambledY1;
+                alpha = 0;
+              } else {
+                const t = (transProgress - 0.5) * 2;
+                const t2 = t * t;
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                currentX = mt2 * item.scrambledX1 + 2 * mt * t * item.ctrl1bX + t2 * item.endX;
+                currentY = mt2 * item.scrambledY1 + 2 * mt * t * item.ctrl1bY + t2 * item.endY;
+                alpha = t;
+              }
+              displayChar = item.targetChar;
+            }
+            // Morph alphabetic characters normally
+            else if (transProgress <= 0.5) {
               const t = transProgress * 2;
               const t2 = t * t;
               const mt = 1 - t;
@@ -766,6 +847,7 @@
               currentX = mt2 * item.startX + 2 * mt * t * item.controlX1 + t2 * item.scrambledX1;
               currentY = mt2 * item.startY + 2 * mt * t * item.controlY1 + t2 * item.scrambledY1;
               displayChar = item.char;
+              alpha = 1;
             } else {
               const t = (transProgress - 0.5) * 2;
               const t2 = t * t;
@@ -774,11 +856,18 @@
               currentX = mt2 * item.scrambledX1 + 2 * mt * t * item.ctrl1bX + t2 * item.endX;
               currentY = mt2 * item.scrambledY1 + 2 * mt * t * item.ctrl1bY + t2 * item.endY;
               displayChar = t < 0.5 ? item.char : item.targetChar;
+              alpha = 1;
             }
+            
+            ctx.fillStyle = '#1f2937';
+            ctx.globalAlpha = alpha;
             ctx.fillText(displayChar, currentX, currentY);
           });
+          ctx.globalAlpha = 1;
         } else if (i < 65) {
           // Hold on phrase 2
+          ctx.fillStyle = '#1f2937';
+          ctx.globalAlpha = 1;
           charMapping.forEach((item) => {
             ctx.fillText(item.targetChar, item.endX, item.endY);
           });
@@ -786,8 +875,62 @@
           // Morph from phrase 2 back to phrase 1
           const transProgress = (i - 65) / 35;
           charMapping.forEach((item) => {
-            let currentX, currentY, displayChar;
-            if (transProgress <= 0.5) {
+            let currentX, currentY, displayChar, alpha;
+            
+            // Characters only in phrase 2 - fade out with spline
+            if (item.fromPhrase === 2) {
+              if (transProgress <= 0.5) {
+                const t = transProgress * 2;
+                const t2 = t * t;
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                currentX = mt2 * item.endX + 2 * mt * t * item.controlX2 + t2 * item.scrambledX2;
+                currentY = mt2 * item.endY + 2 * mt * t * item.controlY2 + t2 * item.scrambledY2;
+                alpha = 1 - t;
+              } else {
+                currentX = item.scrambledX2;
+                currentY = item.scrambledY2;
+                alpha = 0;
+              }
+              displayChar = item.targetChar;
+            }
+            // Non-alphabetic from phrase 1: FADE IN (they're coming back)
+            else if (!item.isAlpha1) {
+              if (transProgress <= 0.5) {
+                currentX = item.scrambledX2;
+                currentY = item.scrambledY2;
+                alpha = 0;
+                displayChar = item.char;
+              } else {
+                const t = (transProgress - 0.5) * 2;
+                const t2 = t * t;
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                currentX = mt2 * item.scrambledX2 + 2 * mt * t * item.ctrl2bX + t2 * item.startX;
+                currentY = mt2 * item.scrambledY2 + 2 * mt * t * item.ctrl2bY + t2 * item.startY;
+                alpha = t;
+                displayChar = item.char;
+              }
+            }
+            // Non-alphabetic from phrase 2: FADE OUT (they're leaving)
+            else if (!item.isAlpha2) {
+              if (transProgress <= 0.5) {
+                const t = transProgress * 2;
+                const t2 = t * t;
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                currentX = mt2 * item.endX + 2 * mt * t * item.controlX2 + t2 * item.scrambledX2;
+                currentY = mt2 * item.endY + 2 * mt * t * item.controlY2 + t2 * item.scrambledY2;
+                alpha = 1 - t;
+              } else {
+                currentX = item.scrambledX2;
+                currentY = item.scrambledY2;
+                alpha = 0;
+              }
+              displayChar = item.targetChar;
+            }
+            // Morph alphabetic characters normally
+            else if (transProgress <= 0.5) {
               const t = transProgress * 2;
               const t2 = t * t;
               const mt = 1 - t;
@@ -795,6 +938,7 @@
               currentX = mt2 * item.endX + 2 * mt * t * item.controlX2 + t2 * item.scrambledX2;
               currentY = mt2 * item.endY + 2 * mt * t * item.controlY2 + t2 * item.scrambledY2;
               displayChar = item.targetChar;
+              alpha = 1;
             } else {
               const t = (transProgress - 0.5) * 2;
               const t2 = t * t;
@@ -803,13 +947,24 @@
               currentX = mt2 * item.scrambledX2 + 2 * mt * t * item.ctrl2bX + t2 * item.startX;
               currentY = mt2 * item.scrambledY2 + 2 * mt * t * item.ctrl2bY + t2 * item.startY;
               displayChar = t < 0.5 ? item.targetChar : item.char;
+              alpha = 1;
             }
-            ctx.fillText(displayChar, currentX, currentY);
+            
+            if (alpha > 0) {
+              ctx.fillStyle = '#1f2937';
+              ctx.globalAlpha = alpha;
+              ctx.fillText(displayChar, currentX, currentY);
+            }
           });
+          ctx.globalAlpha = 1;
         } else {
           // Hold on phrase 1 again (frames 100-119)
+          ctx.fillStyle = '#1f2937';
+          ctx.globalAlpha = 1;
           charMapping.forEach((item) => {
-            ctx.fillText(item.char, item.startX, item.startY);
+            if (item.fromPhrase === 1) {
+              ctx.fillText(item.char, item.startX, item.startY);
+            }
           });
         }
     
@@ -818,6 +973,7 @@
     
       return capturedFrames;
     }
+
     function animate() {
       if (!verifyAnagram()) {
         alert('Please enter valid anagrams first!');
